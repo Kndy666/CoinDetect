@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "showDevDebugOutput": "parsed",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/CoinDetect.elf",
+            "name": "Debug STM32",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "preLaunchTask": "Build STM",
+            "device": "stm32f411xe.s",
+            "configFiles": [
+                "openocd.cfg"
+            ]
+        },
+        {
+            "showDevDebugOutput": "parsed",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/CoinDetect.elf",
+            "name": "Attach STM32",
+            "request": "attach",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "preLaunchTask": "Build STM",
+            "device": "stm32f411xe.s",
+            "configFiles": [
+                "openocd.cfg"
+            ]
+        },
+		{
+			"label": "Flash Release",
+			"type": "shell",
+			"command" : "C:/USERS/KNDY_/APPDATA/ROAMING/CODE/USER/GLOBALSTORAGE/BMD.STM32-FOR-VSCODE/@XPACK-DEV-TOOLS/WINDOWS-BUILD-TOOLS/4.4.1-2.1/.CONTENT/BIN/MAKE.EXE -j16 -O DEBUG=0 -f STM32Make.mk flash"
+		},
+		{
+			"label": "Show Memory&Flash Usage",
+			"type": "shell",
+			"command" : "./getsize.ps1"
+		}
+    ]
+}
