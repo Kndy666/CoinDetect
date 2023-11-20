@@ -21,7 +21,7 @@
 #include "main.h"
 
 /*** Redefine if necessary ***/
-#define AD9833_SPI_PORT 		hspi1
+#define AD9833_SPI_PORT 		hspi2
 extern SPI_HandleTypeDef 		AD9833_SPI_PORT;
 
 /*** Control Register Bits (DataSheet AD9833 p. 14, Table 6) ***/
