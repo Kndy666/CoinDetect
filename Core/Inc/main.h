@@ -59,12 +59,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-#define AD9833_SCK_Pin GPIO_PIN_10
-#define AD9833_SCK_GPIO_Port GPIOB
-#define AD9833_DAT_Pin GPIO_PIN_15
-#define AD9833_DAT_GPIO_Port GPIOB
-#define AD9833_FSYNC_Pin GPIO_PIN_14
-#define AD9833_FSYNC_GPIO_Port GPIOB
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

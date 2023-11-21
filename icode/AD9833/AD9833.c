@@ -1,128 +1,90 @@
-/*
- * @file AD9833.h
- * @brief Function for the AD9833 chip
- *
- * This contains functions for working with
- * AD9833 signal generator.
- *
- * !!!!IMPORTANT!!!!
- * Setup Hardware SPI to POLATRITY HIGH, PHASE 1 EDGE
- *
- * Offical Documents:
- * https://www.analog.com/media/en/technical-documentation/application-notes/AN-1070.pdf
- * https://www.analog.com/media/en/technical-documentation/data-sheets/AD9833.pdf
- *
- * @author Andrii Ivanchenko <ivanchenko59@gmail.com>
- */
-
+/*************************************************************************************
+ Title	:   Analog Devices AD9833 DDS Wave Generator Library for STM32 Using HAL Libraries
+ Author:    Bardia Alikhan Afshar <bardia.a.afshar@gmail.com>
+ Software:  IAR Embedded Workbench for ARM
+ Hardware:  Any STM32 device
+*************************************************************************************/
 #include "AD9833.h"
+// ------------------- Variables ----------------
+uint16_t FRQLW = 0;    // MSB of Frequency Tuning Word
+uint16_t FRQHW = 0;    // LSB of Frequency Tuning Word
+uint32_t phaseVal = 0; // Phase Tuning Value
+uint8_t WKNOWN = 0;    // Flag Variable
+// -------------------------------- Functions --------------------------------
 
-uint8_t _waveform = WAVEFORM_SINE;
-uint8_t _sleep_mode = NO_POWERDOWN;
-uint8_t _freq_source = 0;
-uint8_t _phase_source = 0;
-uint8_t _reset_state = 0;
-
-/*
- * @brief Set Chip Select pin to LOW state
- */
-static void AD9833_Select(void)
+static void writeSPI(uint16_t data)
 {
-	HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET);
+  uint8_t LByte = data & 0xff;
+  uint8_t HByte = (data >> 8) & 0xff;
+  HAL_SPI_Transmit(&AD9833_SPI_PORT, &HByte, 1, HAL_MAX_DELAY);
+  HAL_SPI_Transmit(&AD9833_SPI_PORT, &LByte, 1, HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET);
+  return;
 }
 
-/*
- * @brief Set Chip Select pin to HIGH state
- */
-static void AD9833_Unselect(void)
+// ------------------------------------------------ Sets Output Wave Type
+void AD9833_SetWave(uint16_t Wave)
 {
-	HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET);
+  switch (Wave)
+  {
+  case 0:
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET);
+    writeSPI(0x2000); // Value for Sinusoidal Wave
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET);
+    WKNOWN = 0;
+    break;
+  case 1:
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET);
+    writeSPI(0x2028); // Value for Square Wave
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET);
+    WKNOWN = 1;
+    break;
+  case 2:
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET);
+    writeSPI(0x2002); // Value for Triangle Wave
+    HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET);
+    WKNOWN = 2;
+    break;
+  default:
+    break;
+  }
 }
 
-/*
- * @brief Send data by SPI protocol
- * @param Data variable in uint16_t format
-*/
-static void AD9833_WriteRegister(uint16_t data)
+// ------------------------------------------------ Sets Wave Frequency & Phase (In Degree) In PHASE0 & FREQ0 Registers
+void AD9833_SetWaveData(float Frequency, float Phase)
 {
-	AD9833_Select();
-	uint8_t LByte = data & 0xff;
-	uint8_t HByte = (data >> 8) & 0xff;
-	HAL_SPI_Transmit(&AD9833_SPI_PORT, &HByte, 1, HAL_MAX_DELAY);
-	HAL_SPI_Transmit(&AD9833_SPI_PORT, &LByte, 1, HAL_MAX_DELAY);
-	AD9833_Unselect();
+  // ---------- Tuning Word for Phase ( 0 - 360 Degree )
+  if (Phase < 0)
+    Phase = 0; // Changing Phase Value to Positive
+  if (Phase > 360)
+    Phase = 360;                                     // Maximum value For Phase (In Degree)
+  phaseVal = ((int)(Phase * (4096 / 360))) | 0XC000; // 4096/360 = 11.37 change per Degree for Register And using 0xC000 which is Phase 0 Register Address
+
+  // ---------- Tuning word for Frequency
+  long freq = 0;
+  freq = (int)(((Frequency * pow(2, 28)) / FMCLK) + 1); // Tuning Word
+  FRQHW = (int)((freq & 0xFFFC000) >> 14);              // FREQ MSB
+  FRQLW = (int)(freq & 0x3FFF);                         // FREQ LSB
+  FRQLW |= 0x4000;
+  FRQHW |= 0x4000;
+  // ------------------------------------------------ Writing DATA
+  HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_RESET); // low = selected
+  writeSPI(0x2100);                                                            // enable 16bit words and set reset bit
+  writeSPI(FRQLW);
+  writeSPI(FRQHW);
+  writeSPI(phaseVal);
+  writeSPI(0x2000);                                                          // clear reset bit
+  HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET); // high = deselected
+  AD9833_SetWave(WKNOWN);
+  return;
 }
 
-/*
- * @brief Update Control Register Bits
- */
-static void AD9833_WriteCfgReg(void)
+// ------------------------------------------------ Initializing AD9833
+void AD9833_Init(uint16_t WaveType, float FRQ, float Phase)
 {
-	uint16_t cfg = 0;
-	cfg |= _waveform;
-	cfg |= _sleep_mode;
-	cfg |= (_freq_source ? F_SELECT_CFG : 0);	//it's unimportant because don't use FREQ1
-	cfg |= (_phase_source ? P_SELECT_CFG : 0);	//it's unimportant because don't use PHASE1
-	cfg |= (_reset_state ? RESET_CFG : 0);
-	cfg |= B28_CFG;
-	AD9833_WriteRegister(cfg);
-}
-
-void AD9833_SetWaveform(WaveDef Wave)
-{
-	if (Wave == wave_sine) 			_waveform = WAVEFORM_SINE;
-	else if (Wave == wave_square) 	_waveform = WAVEFORM_SQUARE;
-	else if (Wave == wave_triangle)	_waveform = WAVEFORM_TRIANGLE;
-	AD9833_WriteCfgReg();
-}
-
-void AD9833_SetFrequency(uint32_t freq)
-{
-	// TODO: calculate max frequency based on refFrequency.
-	// Use the calculations for sanity checks on numbers.
-	// Sanity check on frequency: Square - refFrequency / 2
-	// Sine/Triangle - refFrequency / 4
-
-	if (freq > (FMCLK >> 1))	//bitwise FMCLK / 2
-		freq = FMCLK >> 1;
-	else if (freq < 0) freq = 0;
-
-	uint32_t freq_reg = (float)freq * (float)((1 << 28) / FMCLK); // Tuning word
-
-	uint16_t LSB = FREQ0_REG | (freq_reg & 0x3FFF);
-	uint16_t MSB = FREQ0_REG | (freq_reg >> 14);
-
-	AD9833_WriteCfgReg();	// Update Config Register
-	AD9833_WriteRegister(LSB);
-	AD9833_WriteRegister(MSB);
-}
-
-void AD9833_SetPhase(uint16_t phase_deg)
-{
-	if(phase_deg < 0) phase_deg = 0;
-	else if (phase_deg > 360) phase_deg %= 360;
-	uint16_t phase_val  = ((uint16_t)(phase_deg * BITS_PER_DEG)) &  0xFFF;
-	AD9833_WriteRegister(PHASE0_REG | phase_val);
-}
-
-void AD9833_Init(WaveDef Wave, uint32_t freq, uint16_t phase_deg)
-{
-	AD9833_OutputEnable(0);
-	AD9833_SetWaveform(Wave);
-	AD9833_WriteCfgReg();
-	AD9833_SetFrequency(freq);
-	AD9833_SetPhase(phase_deg);
-	AD9833_OutputEnable(1);
-}
-
-void AD9833_SleepMode(uint8_t mode)
-{
-	_sleep_mode = mode;
-	AD9833_WriteCfgReg();
-}
-
-void AD9833_OutputEnable(uint8_t output_state)
-{
-	_reset_state = !output_state;
-	AD9833_WriteCfgReg();
+  HAL_GPIO_WritePin(AD9833_FSYNC_GPIO_Port, AD9833_FSYNC_Pin, GPIO_PIN_SET); // Set All SPI pings to High
+  AD9833_SetWave(WaveType);                                                  // Type Of Wave
+  AD9833_SetWaveData(FRQ, Phase);                                            // Frequency & Phase Set
+  return;
 }

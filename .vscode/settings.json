@@ -5,6 +5,8 @@
         "ad9833.h": "c",
         "stm32f4xx_hal.h": "c",
         "main.h": "c",
-        "retarget.h": "c"
+        "retarget.h": "c",
+        "ad9833_2.h": "c",
+        "spi.h": "c"
     }
 }

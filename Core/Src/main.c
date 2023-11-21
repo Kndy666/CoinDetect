@@ -117,7 +117,7 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   FFT_Init();
-  AD9833_Init(wave_sine, 3e4, 0);
+  AD9833_Init(SIN, 3e4, 0);
   RetargetInit(&huart1);
   SetSimpleRate(&hadc1, &htim2, 75 * 1e3);//75kHz
   HAL_TIM_Base_Start(&htim2);
@@ -135,7 +135,6 @@ int main(void)
       GetPeeks(ADC1ConvertedVoltage, peeks, ADC_BUF_SIZE);
       FFT_f32(ADC1ConvertedVoltage, ADC_BUF_SIZE, &FFT_Res);
       isADC1Converted = false;
-      HAL_Delay(5000);
       HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC1ConvertedValues, ADC_BUF_SIZE);
     }
     /* USER CODE END WHILE */

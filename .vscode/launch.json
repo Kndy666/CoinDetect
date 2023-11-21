@@ -28,15 +28,5 @@
                 "openocd.cfg"
             ]
         },
-		{
-			"label": "Flash Release",
-			"type": "shell",
-			"command" : "C:/USERS/KNDY_/APPDATA/ROAMING/CODE/USER/GLOBALSTORAGE/BMD.STM32-FOR-VSCODE/@XPACK-DEV-TOOLS/WINDOWS-BUILD-TOOLS/4.4.1-2.1/.CONTENT/BIN/MAKE.EXE -j16 -O DEBUG=0 -f STM32Make.mk flash"
-		},
-		{
-			"label": "Show Memory&Flash Usage",
-			"type": "shell",
-			"command" : "./getsize.ps1"
-		}
     ]
 }
