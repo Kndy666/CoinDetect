@@ -7,6 +7,7 @@
         "main.h": "c",
         "retarget.h": "c",
         "ad9833_2.h": "c",
-        "spi.h": "c"
+        "spi.h": "c",
+        "dma.h": "c"
     }
 }
