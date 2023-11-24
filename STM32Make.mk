@@ -138,6 +138,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_adc.c \
 icode/AD9833/AD9833.c \
 icode/FFT/FFTv2.c \
+icode/HMI/HMI.c \
 icode/Retarget/Retarget.c
 
 
@@ -165,6 +166,7 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -Iicode/AD9833 \
 -Iicode/FFT \
+-Iicode/HMI \
 -Iicode/Retarget
 
 

@@ -27,7 +27,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "HMI.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

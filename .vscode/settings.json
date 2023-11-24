@@ -8,6 +8,9 @@
         "retarget.h": "c",
         "ad9833_2.h": "c",
         "spi.h": "c",
-        "dma.h": "c"
+        "dma.h": "c",
+        "stm32f4xx_it.h": "c",
+        "usart.h": "c",
+        "adc.h": "c"
     }
 }

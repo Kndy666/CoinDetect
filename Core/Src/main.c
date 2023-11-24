@@ -30,6 +30,7 @@
 #include "AD9833.h"
 #include "Retarget.h"
 #include "FFTv2.h"
+#include "HMI.h"
 
 #include <stdbool.h>
 /* USER CODE END Includes */
@@ -42,7 +43,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define ADC_BUF_SIZE 1024
-#define REV_BUF_SIZE 512
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,9 +56,9 @@
 uint16_t ADC1ConvertedValues[ADC_BUF_SIZE];
 float ADC1ConvertedVoltage[ADC_BUF_SIZE];
 FFTresult FFT_Res;
+HMI_Rev HMI_RevData;
 
 bool isADC1Converted = false;
-uint8_t bufferRev[REV_BUF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -80,12 +80,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     HAL_ADC_Stop_DMA(hadc);
     isADC1Converted = true;
   }
-}
-void USAR_UART_IDLECallback(UART_HandleTypeDef *huart)
-{
-  HAL_UART_DMAStop(huart);
-  uint16_t data_length = REV_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-  HAL_UART_Receive_DMA(huart, bufferRev, REV_BUF_SIZE);
 }
 /* USER CODE END 0 */
 
@@ -127,8 +121,7 @@ int main(void)
   FFT_Init();
   AD9833_Init(SIN, 3e4, 0);
   RetargetInit(&huart1);
-  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
-  HAL_UART_Receive_DMA(&huart1, bufferRev, REV_BUF_SIZE);
+  HMI_Init(&huart1, &HMI_RevData);
 
   SetSimpleRate(&hadc1, &htim2, 75 * 1e3);//75kHz
   HAL_TIM_Base_Start(&htim2);
