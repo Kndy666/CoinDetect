@@ -1,18 +1,20 @@
 #include "HMI.h"
+#include "Retarget.h"
 
-HMI_Rev *_rev;
-void HMI_Init(UART_HandleTypeDef *huart, HMI_Rev *rev)
+HMI_Handle *_rev;
+void HMI_Init(UART_HandleTypeDef *huart, HMI_Handle *rev)
 {
     _rev = rev;
-    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
-    HAL_UART_Receive_DMA(huart, _rev->bufferRev, REV_BUF_SIZE);
+    HAL_UARTEx_ReceiveToIdle_DMA(huart, _rev->bufferRev, REV_BUF_SIZE);
 }
-void USAR_UART_IDLECallback(UART_HandleTypeDef *huart)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-    HAL_UART_DMAStop(huart);
-    _rev->dataLength = REV_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-    _rev->isRevOK = true;
-    HAL_UART_Receive_DMA(huart, _rev->bufferRev, REV_BUF_SIZE);
+    if(huart -> Instance == USART1)
+    {
+        _rev->dataLength = Size;
+        _rev->isRevOK = true;
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, _rev->bufferRev, REV_BUF_SIZE);
+    }
 }
 void HMI_Printf(uint8_t *cmd)
 {

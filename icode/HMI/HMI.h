@@ -6,16 +6,13 @@
 
 #define REV_BUF_SIZE 512
 
-typedef struct HMI_Rev
+typedef struct HMI_Handle
 {
     uint8_t bufferRev[REV_BUF_SIZE];
     uint16_t dataLength;
     bool isRevOK;
-}HMI_Rev;
+}HMI_Handle;
 
-extern DMA_HandleTypeDef hdma_usart1_rx;
-
-void HMI_Init(UART_HandleTypeDef *huart, HMI_Rev *rev);
-void USAR_UART_IDLECallback(UART_HandleTypeDef *huart);
+void HMI_Init(UART_HandleTypeDef *huart, HMI_Handle *rev);
 void HMI_Printf(uint8_t *cmd);
 #endif

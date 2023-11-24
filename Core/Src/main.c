@@ -56,7 +56,7 @@
 uint16_t ADC1ConvertedValues[ADC_BUF_SIZE];
 float ADC1ConvertedVoltage[ADC_BUF_SIZE];
 FFTresult FFT_Res;
-HMI_Rev HMI_RevData;
+HMI_Handle HMI_RevData;
 
 bool isADC1Converted = false;
 /* USER CODE END PV */
