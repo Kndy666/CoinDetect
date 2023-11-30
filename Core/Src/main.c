@@ -33,11 +33,20 @@
 #include "HMI.h"
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef enum
+{
+  None,
+  A_Measure,
+  B_Measure,
+  C_Measure,
+  Measure
+} Mode;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -54,21 +63,25 @@
 
 /* USER CODE BEGIN PV */
 uint16_t ADC1ConvertedValues[ADC_BUF_SIZE];
-float ADC1ConvertedVoltage[ADC_BUF_SIZE];
-FFTresult FFT_Res;
+// float ADC1ConvertedVoltage[ADC_BUF_SIZE];
+// FFTresult FFT_Res;
 HMI_Handle HMI_RevData;
 
 bool isADC1Converted = false;
+Mode mode = None;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void GetPeeks(float *source, float *res, uint16_t len);
+float GetAvg(uint16_t *source, uint16_t len);
 uint32_t GetADCCLK(ADC_HandleTypeDef *hadc);
 void SetSimplingTime(ADC_HandleTypeDef *hadc, uint32_t time);
 void SetSimpleRate(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim, uint32_t rate);
 void VoltageConvert(uint16_t *source, float *res, uint16_t len);
+void EventCapture();
+void EventProcess();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -84,9 +97,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -118,12 +131,12 @@ int main(void)
   MX_TIM2_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
-  FFT_Init();
-  AD9833_Init(SIN, 3e4, 0);
+  // FFT_Init();
+  AD9833_Init(SIN, 349 * 1e3, 0);
   RetargetInit(&huart1);
   HMI_Init(&huart1, &HMI_RevData);
 
-  SetSimpleRate(&hadc1, &htim2, 75 * 1e3);//75kHz
+  SetSimpleRate(&hadc1, &htim2, 1e3); // 1kHz
   HAL_TIM_Base_Start(&htim2);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC1ConvertedValues, ADC_BUF_SIZE);
   /* USER CODE END 2 */
@@ -134,10 +147,10 @@ int main(void)
   {
     if (isADC1Converted)
     {
-      float peeks[2];
-      VoltageConvert(ADC1ConvertedValues, ADC1ConvertedVoltage, ADC_BUF_SIZE);
-      GetPeeks(ADC1ConvertedVoltage, peeks, ADC_BUF_SIZE);
-      FFT_f32(ADC1ConvertedVoltage, ADC_BUF_SIZE, &FFT_Res);
+      // VoltageConvert(ADC1ConvertedValues, ADC1ConvertedVoltage, ADC_BUF_SIZE);
+      // FFT_f32(ADC1ConvertedVoltage, ADC_BUF_SIZE, &FFT_Res);
+      EventCapture();
+      EventProcess();
       isADC1Converted = false;
       HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC1ConvertedValues, ADC_BUF_SIZE);
     }
@@ -149,22 +162,22 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -179,9 +192,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -194,7 +206,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-//Get min and max value of array
+// Get min and max value of array
 void GetPeeks(float *source, float *res, uint16_t len)
 {
   float min = 4096;
@@ -213,7 +225,17 @@ void GetPeeks(float *source, float *res, uint16_t len)
   res[0] = min;
   res[1] = max;
 }
-//Get ADCCLK
+// Get average value of array
+float GetAvg(uint16_t *source, uint16_t len)
+{
+  uint32_t sum = 0;
+  for (uint16_t i = 0; i < len; i++)
+  {
+    sum += source[i];
+  }
+  return sum / len;
+}
+// Get ADCCLK
 uint32_t GetADCCLK(ADC_HandleTypeDef *hadc)
 {
   uint32_t PCLK2 = HAL_RCC_GetPCLK2Freq();
@@ -237,7 +259,7 @@ uint32_t GetADCCLK(ADC_HandleTypeDef *hadc)
   }
   }
 }
-//Set ADC sampling time
+// Set ADC sampling time
 void SetSimplingTime(ADC_HandleTypeDef *hadc, uint32_t time)
 {
   ADC_ChannelConfTypeDef sConfig = {0};
@@ -253,12 +275,12 @@ void SetSimplingTime(ADC_HandleTypeDef *hadc, uint32_t time)
 /*
 Set ADC sampling rate. Automatically set ADC and TIM.
 Strategy:
-  Sampling an analog signal more slowly reduces surge "parasitic" drain on the analog line as a result of the sampling process itself, 
-  which both draws a tiny current from the analog line and takes time. 
-  If your analog line has an extremely small current source capability 
-  (think: the analog source "recharging" the capacitance of the analog line can only produce a tiny tiny current to recharge that analog line), 
-  then it cannot handle a high sample rate sampling on it. This is, again, because the sampling process itself will draw current, 
-  making the analog signal sag (distorting it from its true value), and introducing noise to the analog signal. 
+  Sampling an analog signal more slowly reduces surge "parasitic" drain on the analog line as a result of the sampling process itself,
+  which both draws a tiny current from the analog line and takes time.
+  If your analog line has an extremely small current source capability
+  (think: the analog source "recharging" the capacitance of the analog line can only produce a tiny tiny current to recharge that analog line),
+  then it cannot handle a high sample rate sampling on it. This is, again, because the sampling process itself will draw current,
+  making the analog signal sag (distorting it from its true value), and introducing noise to the analog signal.
   In such cases you are wise to choose a slow sample rate by setting your sample time to a very long value.
 */
 void SetSimpleRate(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim, uint32_t rate)
@@ -295,12 +317,69 @@ void VoltageConvert(uint16_t *source, float *res, uint16_t len)
     res[i] = source[i] * 3.3 / 4096;
   }
 }
+
+void EventCapture()
+{
+  if (HMI_RevData.dataLength)
+  {
+    if (!strcmp(HMI_RevData.bufferRev, "Measure"))
+    {
+      mode = Measure;
+      HMI_BufReset();
+    }
+    else if (!strcmp(HMI_RevData.bufferRev, "A_Measure"))
+    {
+      mode = A_Measure;
+      HMI_BufReset();
+    }
+    else if (!strcmp(HMI_RevData.bufferRev, "B_Measure"))
+    {
+      mode = B_Measure;
+      HMI_BufReset();
+    }
+    else if (!strcmp(HMI_RevData.bufferRev, "C_Measure"))
+    {
+      mode = C_Measure;
+      HMI_BufReset();
+    }
+  }
+}
+void EventProcess()
+{
+  switch (mode)
+  {
+  case Measure:
+  {
+    float avg = GetAvg(ADC1ConvertedValues, ADC_BUF_SIZE) / 4096 * 3.3;
+    uint8_t command[20] = {0};
+    sprintf(command, "t0.txt=\"%.4f\"", avg);
+    HMI_Printf(command);
+    mode = None;
+    break;
+  }
+  case A_Measure:
+  {
+    mode = None;
+    break;
+  }
+  case B_Measure:
+  {
+    mode = None;
+    break;
+  }
+  case C_Measure:
+  {
+    mode = None;
+    break;
+  }
+  }
+}
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -312,14 +391,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

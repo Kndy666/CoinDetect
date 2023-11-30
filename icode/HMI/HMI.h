@@ -15,4 +15,5 @@ typedef struct HMI_Handle
 
 void HMI_Init(UART_HandleTypeDef *huart, HMI_Handle *rev);
 void HMI_Printf(uint8_t *cmd);
+void HMI_BufReset();
 #endif
