@@ -251,7 +251,7 @@ LIBRARY_DIRECTORIES := \
 
 # Additional linker flags Flags from the yaml configuration file
 # can be overwritten in the environment file
-ADDITIONAL_LINKER_FLAGS ?= -specs=nano.specs 
+ADDITIONAL_LINKER_FLAGS ?= -u _printf_float 
 
 # Flags for outputting a map file
 # -Wl,-Map= flag will output the map file to the specified file

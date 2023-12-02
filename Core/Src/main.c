@@ -346,24 +346,94 @@ void EventCapture()
 }
 void EventProcess()
 {
+  float avg = GetAvg(ADC1ConvertedValues, ADC_BUF_SIZE) / 4096 * 3.3;
   switch (mode)
   {
   case Measure:
   {
-    float avg = GetAvg(ADC1ConvertedValues, ADC_BUF_SIZE) / 4096 * 3.3;
     uint8_t command[20] = {0};
-    sprintf(command, "t0.txt=\"%.4f\"", avg);
+    sprintf(command, "t0.txt=\"%.6f\"", avg);
     HMI_Printf(command);
     mode = None;
     break;
   }
   case A_Measure:
   {
+    if(avg < 2.20)
+    {
+      HMI_Printf("t0.txt=\"CoinBox Detected\"");
+      if(avg <= 2.20 && avg >= 2.08)HMI_Printf("p0.pic=2");
+      else if(avg < 2.08 && avg >= 1.8)HMI_Printf("p0.pic=1");
+      else if(avg < 1.8)HMI_Printf("p0.pic=0");
+      HMI_Printf("vis p0,1");
+    }
+    else
+    {
+      HMI_Printf("t0.txt=\"Please Place Box\"");
+      HMI_Printf("vis p0,0");
+    }
     mode = None;
     break;
   }
   case B_Measure:
   {
+    if(avg < 2.20)
+    {
+      HMI_Printf("t0.txt=\"CoinBox Detected\"");
+      if(avg <= 1.45 && avg >= 1.36)
+      {
+        HMI_Printf("p0.pic=3");
+        HMI_Printf("p1.pic=3");
+      }
+      else if(avg <= 1.53 && avg > 1.45)
+      {
+        HMI_Printf("p0.pic=4");
+        HMI_Printf("p1.pic=3");
+      }
+      else if(avg <= 1.57 && avg > 1.53)
+      {
+        HMI_Printf("p0.pic=5");
+        HMI_Printf("p1.pic=3");        
+      }
+      else if(avg <= 1.62 && avg > 1.57)
+      {
+        HMI_Printf("p0.pic=3");
+        HMI_Printf("p1.pic=4");
+      }
+      else if(avg <= 1.75 && avg > 1.62)
+      {
+        HMI_Printf("p0.pic=3");
+        HMI_Printf("p1.pic=5");        
+      }
+      else if(avg <= 1.88 && avg > 1.75)
+      {
+        HMI_Printf("p0.pic=4");
+        HMI_Printf("p1.pic=4");
+      }
+      else if(avg <= 1.94 && avg > 1.88)
+      {
+        HMI_Printf("p0.pic=5");
+        HMI_Printf("p1.pic=4");
+      }
+      else if(avg <= 2.00 && avg > 1.94)
+      {
+        HMI_Printf("p0.pic=4");
+        HMI_Printf("p1.pic=5");
+      }
+      else if(avg < 2.20 && avg > 2.00)
+      {
+        HMI_Printf("p0.pic=5");
+        HMI_Printf("p1.pic=5");
+      }
+      HMI_Printf("vis p0,1");
+      HMI_Printf("vis p1,1");
+    }
+    else
+    {
+      HMI_Printf("t0.txt=\"Please Place Box\"");
+      HMI_Printf("vis p0,0");
+      HMI_Printf("vis p1,0");
+    }
     mode = None;
     break;
   }
