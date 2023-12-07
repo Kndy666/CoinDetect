@@ -27,7 +27,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "AD9833.h"
+//#include "AD9833.h"
+#include "AD9834.h"
 #include "Retarget.h"
 #include "FFTv2.h"
 #include "HMI.h"
@@ -97,9 +98,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -132,7 +133,9 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   // FFT_Init();
-  AD9833_Init(SIN, 349 * 1e3, 0);
+  //AD9833_Init(SIN, 349 * 1e3, 0);
+  AD9834_Select_Wave(Sine_Wave);
+  AD9834_Set_Freq(FREQ_0, 364500);
   RetargetInit(&huart1);
   HMI_Init(&huart1, &HMI_RevData);
 
@@ -162,22 +165,22 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -192,8 +195,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -359,12 +363,12 @@ void EventProcess()
   }
   case A_Measure:
   {
-    if(avg < 2.20)
+    if(avg < 2.3)
     {
       HMI_Printf("t0.txt=\"CoinBox Detected\"");
-      if(avg <= 2.20 && avg >= 2.08)HMI_Printf("p0.pic=2");
-      else if(avg < 2.08 && avg >= 1.8)HMI_Printf("p0.pic=1");
-      else if(avg < 1.8)HMI_Printf("p0.pic=0");
+      if(avg <= 2.3 && avg >= 2.25)HMI_Printf("p0.pic=2");
+      else if(avg < 2.25 && avg >= 2.07)HMI_Printf("p0.pic=1");
+      else if(avg < 2.07)HMI_Printf("p0.pic=0");
       HMI_Printf("vis p0,1");
     }
     else
@@ -380,47 +384,47 @@ void EventProcess()
     if(avg < 2.20)
     {
       HMI_Printf("t0.txt=\"CoinBox Detected\"");
-      if(avg <= 1.45 && avg >= 1.36)
+      if(avg <= 1.7 && avg >= 1.4)
       {
         HMI_Printf("p0.pic=3");
         HMI_Printf("p1.pic=3");
       }
-      else if(avg <= 1.53 && avg > 1.45)
+      else if(avg <= 1.79 && avg > 1.7)
       {
         HMI_Printf("p0.pic=4");
         HMI_Printf("p1.pic=3");
       }
-      else if(avg <= 1.57 && avg > 1.53)
+      else if(avg <= 1.85 && avg > 1.79)
       {
         HMI_Printf("p0.pic=5");
         HMI_Printf("p1.pic=3");        
       }
-      else if(avg <= 1.62 && avg > 1.57)
+      else if(avg <= 1.94 && avg > 1.85)
       {
         HMI_Printf("p0.pic=3");
         HMI_Printf("p1.pic=4");
       }
-      else if(avg <= 1.75 && avg > 1.62)
+      else if(avg <= 2 && avg > 1.94)
       {
         HMI_Printf("p0.pic=3");
         HMI_Printf("p1.pic=5");        
       }
-      else if(avg <= 1.88 && avg > 1.75)
+      else if(avg <= 2.12 && avg > 2)
       {
         HMI_Printf("p0.pic=4");
         HMI_Printf("p1.pic=4");
       }
-      else if(avg <= 1.94 && avg > 1.88)
+      else if(avg <= 2.15 && avg > 2.12)
       {
         HMI_Printf("p0.pic=5");
         HMI_Printf("p1.pic=4");
       }
-      else if(avg <= 2.00 && avg > 1.94)
+      else if(avg <= 2.17 && avg > 2.15)
       {
         HMI_Printf("p0.pic=4");
         HMI_Printf("p1.pic=5");
       }
-      else if(avg < 2.20 && avg > 2.00)
+      else if(avg < 2.3 && avg > 2.17)
       {
         HMI_Printf("p0.pic=5");
         HMI_Printf("p1.pic=5");
@@ -439,6 +443,27 @@ void EventProcess()
   }
   case C_Measure:
   {
+    if(avg  > 1.95)
+    {
+      HMI_Printf("p0.pic=8");
+      HMI_Printf("p1.pic=8");
+      HMI_Printf("p2.pic=8");
+    }
+    else if(avg <= 1.95 && avg > 1.45)
+    {
+      HMI_Printf("p0.pic=7");
+      HMI_Printf("p1.pic=7");
+      HMI_Printf("p2.pic=7");
+    }
+    else if(avg <= 1.45)
+    {
+      HMI_Printf("p0.pic=6");
+      HMI_Printf("p1.pic=6");
+      HMI_Printf("p2.pic=6");
+    }
+    HMI_Printf("vis p0,2");
+    HMI_Printf("vis p1,1");
+    HMI_Printf("vis p2,1");
     mode = None;
     break;
   }
@@ -447,9 +472,9 @@ void EventProcess()
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -461,14 +486,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

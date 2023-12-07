@@ -137,6 +137,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_adc.c \
 icode/AD9833/AD9833.c \
+icode/AD9834/AD9834.c \
 icode/FFT/FFTv2.c \
 icode/HMI/HMI.c \
 icode/Retarget/Retarget.c
@@ -165,6 +166,7 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -Iicode/AD9833 \
+-Iicode/AD9834 \
 -Iicode/FFT \
 -Iicode/HMI \
 -Iicode/Retarget
@@ -251,7 +253,7 @@ LIBRARY_DIRECTORIES := \
 
 # Additional linker flags Flags from the yaml configuration file
 # can be overwritten in the environment file
-ADDITIONAL_LINKER_FLAGS ?= -u _printf_float 
+ADDITIONAL_LINKER_FLAGS ?= -u _printf_float
 
 # Flags for outputting a map file
 # -Wl,-Map= flag will output the map file to the specified file
